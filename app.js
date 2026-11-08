@@ -38,7 +38,7 @@ const flag = c => `https://flagcdn.com/w80/${c.cca2.toLowerCase()}.png`;
 function shell(){
   const p = document.body.dataset.page;
   const on = k => p===k?'class="on"':'';
-  $("#nav").innerHTML = `<nav><b>🫧 WorldEco</b><a href="index.html" ${on('home')}>🏠 Home</a>
+  $("#nav").innerHTML = `<nav><b>💧 WorldEco</b><a href="index.html" ${on('home')}>🏠 Home</a>
     <a href="weather.html" ${on('weather')}>🌤️ Weather</a><a href="time.html" ${on('time')}>🕒 Current Time</a></nav>`;
   $("#footer").innerHTML = `<footer><span>Developer: KING_YOSEF_</span></footer>`;
   const b = document.createElement("div"); b.className = "bubbles";
@@ -46,10 +46,32 @@ function shell(){
     s.style.cssText=`left:${Math.random()*100}%;width:${z}px;height:${z}px;animation-duration:${10+Math.random()*18}s;animation-delay:${-Math.random()*20}s`;b.append(s);}
   document.body.prepend(b);
 }
-async function getCountries(){
-  try{const s=sessionStorage.getItem("cc"); if(s) return JSON.parse(s);}catch(e){}
-  const d = (await (await fetch(API)).json()).sort((a,b)=>a.name.common.localeCompare(b.name.common));
-  try{sessionStorage.setItem("cc",JSON.stringify(d));}catch(e){}
+
+const MIRROR = "https://cdn.jsdelivr.net/gh/mledoze/countries@master/dist/countries.json";
+
+async function tryFetch(url, n = 3) {
+  for (let i = 0; i < n; i++) {
+    try { const r = await fetch(url); if (r.ok) return await r.json(); } catch (e) {}
+    await new Promise(r => setTimeout(r, 800 * (i + 1)));
+  }
+  throw new Error("Failed: " + url);
+}
+function fromMirror(d) {
+  return d.map(c => ({
+    name: { common: c.name.common }, cca2: c.cca2,
+    continents: [c.region === "Americas" ? (c.subregion === "South America" ? "South America" : "North America")
+                 : c.region === "Antarctic" ? "Antarctica" : c.region],
+    currencies: c.currencies, capital: c.capital, timezones: [], latlng: c.latlng,
+    population: 0, languages: c.languages, subregion: c.subregion
+  }));
+}
+async function getCountries() {
+  try { const s = localStorage.getItem("cc2"); if (s) return JSON.parse(s); } catch (e) {}
+  let d;
+  try { d = await tryFetch(API); }
+  catch (e) { d = fromMirror(await tryFetch(MIRROR)); }
+  d.sort((a, b) => a.name.common.localeCompare(b.name.common));
+  if (d[0].timezones.length) { try { localStorage.setItem("cc2", JSON.stringify(d)); } catch (e) {} }
   return d;
 }
 async function getRates(){
@@ -59,7 +81,7 @@ async function getRates(){
 function about(c){
   const cap = (c.capital||[])[0]||"no capital", cu = c.currencies?Object.values(c.currencies)[0]:null;
   const lang = Object.values(c.languages||{}).slice(0,3).join(", ")||"various languages";
-  return `${c.name.common} is in ${c.subregion||c.continents[0]}. Its capital is ${cap} and about ${fmt(c.population)} people live there. People speak ${lang}, and the money used is the ${cu?cu.name+" ("+cur(c)+")":"local currency"}.`;
+  return `${c.name.common} is in ${c.subregion||c.continents[0]}. Its capital is ${cap}${c.population?" and about "+fmt(c.population)+" people live there":""}. People speak ${lang}, and the money used is the ${cu?cu.name+" ("+cur(c)+")":"local currency"}.`;
 }
 function fillNames(list){ $("#names").innerHTML = list.map(c=>`<option value="${c.name.common}">`).join(""); }
 const find = (list,n) => list.find(c=>c.name.common.toLowerCase()===n.trim().toLowerCase());
@@ -117,7 +139,7 @@ async function continent(list){
 async function weather(list){
   fillNames(list);
   const show = async c => {
-    $("#wtitle").textContent = `${c.name.common}`; $("#out").innerHTML = `<p class="center">Loading… 🫧</p>`;
+    $("#wtitle").textContent = `${c.name.common}`; $("#out").innerHTML = `<p class="center">Loading… 💧</p>`;
     let cities = CITIES[c.cca2];
     if(!cities){
       const cap = (c.capital||[])[0];
@@ -144,6 +166,7 @@ let timer;
 async function time(list){
   fillNames(list);
   const show = c => {
+    if(!c.timezones.length){ $("#out").innerHTML="<p class='center'>Time zone data is not available right now. Please refresh in a minute.</p>"; return; }
     $("#ttitle").textContent = `${c.name.common} (${c.timezones.length} time zone${c.timezones.length>1?"s":""})`;
     $("#out").innerHTML = c.timezones.map((tz,i)=>`<div class="card"><h3>🌐 ${tz}</h3><div class="clock" id="t${i}"></div><p id="d${i}"></p></div>`).join("");
     clearInterval(timer);
