@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Weather</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="weather">
+<div id="nav"></div>
+<main>
+  <section class="hero"><h1>🌤️ Weather Meter</h1><p>Search any country to see its cities' current temperatures.</p></section>
+  <input id="q" class="search" list="names" placeholder="Type a country, e.g. Pakistan">
+  <datalist id="names"></datalist>
+  <h2 id="wtitle" class="center"></h2>
+  <div id="out" class="grid"></div>
+</main>
+<div id="footer"></div>
+<script src="app.js"></script>
+</body>
+</html>
